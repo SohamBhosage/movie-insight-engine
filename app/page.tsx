@@ -1,6 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, KeyboardEvent } from "react";
+
+// --- TYPES & INTERFACES ---
+interface MovieData {
+  title: string;
+  year: string;
+  poster: string;
+  rating: string;
+  genre: string;
+  votes: string;
+  cast: string;
+  plot: string;
+  sentimentLabel: "Positive" | "Mixed" | "Negative";
+  aiSummary: string;
+}
 
 export default function Home() {
   const [hasStarted, setHasStarted] = useState(false);
@@ -8,17 +22,15 @@ export default function Home() {
   const [loadingStage, setLoadingStage] = useState(0);
   
   const [query, setQuery] = useState("");
-  const [movie, setMovie] = useState<any>(null);
+  const [movie, setMovie] = useState<MovieData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(true);
-
-  // Screen width state for responsiveness
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-    handleResize(); // Check on mount
+    handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -51,19 +63,26 @@ export default function Home() {
       setLoading(true);
       setError("");
       setMovie(null);
-      const res = await fetch(`/api/movie?query=${query}`);
+      const res = await fetch(`/api/movie?query=${encodeURIComponent(query)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
       setMovie(data);
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+    } catch (err: any) { 
+      setError(err.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
-  const handleKeyPress = (e: any) => { if (e.key === "Enter") fetchMovie(); };
+  const handleKeyPress = (e: KeyboardEvent<HTMLInputElement>) => { 
+    if (e.key === "Enter") fetchMovie(); 
+  };
+
   const toggleTheme = () => setIsDarkMode(!isDarkMode);
 
   const getSentimentColor = (label: string) => {
     switch (label) {
-      case "Positive": return { bg: "rgba(34, 197, 94, 0.15)", text: "#4ade80", border: "#22c55e" };
+      case "Positive": return { bg: "rgba(34, 197, 94, 0.15)", text: "#4ade80", border: "#22c55e"};
       case "Mixed": return { bg: "rgba(234, 179, 8, 0.15)", text: "#facc15", border: "#eab308" };
       case "Negative": return { bg: "rgba(239, 68, 68, 0.15)", text: "#f87171", border: "#ef4444" };
       default: return { bg: "rgba(148, 163, 184, 0.1)", text: "#94a3b8", border: "#475569" };
@@ -78,7 +97,10 @@ export default function Home() {
       backgroundImage: isDarkMode 
         ? "radial-gradient(circle at 50% -20%, #1e1b4b 0%, #0a0a0c 80%)" 
         : "radial-gradient(circle at 50% -20%, #e0e7ff 0%, #f8fafc 80%)",
-      display: !hasStarted ? "flex" : "block",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: !hasStarted ? "center" : "flex-start",
+      alignItems: "center",
     },
     title: { ...styles.title, color: isDarkMode ? "#ffffff" : "#0f172a" },
     subtitle: { ...styles.subtitle, color: isDarkMode ? "#94a3b8" : "#64748b" },
@@ -95,7 +117,7 @@ export default function Home() {
     },
     card: { 
         ...styles.card, 
-        flexDirection: isMobile ? "column" : "row", // DYNAMIC SWITCH
+        flexDirection: isMobile ? "column" : "row",
         alignItems: isMobile ? "center" : "flex-start",
         backgroundColor: isDarkMode ? "rgba(15, 23, 42, 0.6)" : "rgba(255, 255, 255, 0.9)",
         borderColor: isDarkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)",
@@ -108,11 +130,14 @@ export default function Home() {
 
   if (!hasStarted) {
     return (
-      <div style={themeStyles.pageWrapper}>
+      <div style={themeStyles.pageWrapper as any}>
+        <button onClick={toggleTheme} style={styles.themeToggle}>
+          {isDarkMode ? "🌙 DARK" : "☀️ LIGHT"}
+        </button>
         <div style={styles.bootContainer}>
           {!isTransitioning ? (
-            <div style={{ animation: 'fadeInScale 1s ease', padding: '0 20px' }}>
-              <h1 style={{ ...themeStyles.title, fontSize: 'clamp(2rem, 8vw, 4rem)', lineHeight: '1.1' }}>
+            <div style={{ animation: 'fadeInScale 1.2s ease-out', padding: '0 20px' }}>
+              <h1 style={{ ...themeStyles.title, fontSize: 'clamp(2.2rem, 8vw, 4.2rem)', lineHeight: '1.1' }}>
                 Ready to dive into <br/>
                 <span style={styles.aiSparkle}>Cinematic Intelligence?</span>
               </h1>
@@ -135,7 +160,7 @@ export default function Home() {
   }
 
   return (
-    <div style={{...themeStyles.pageWrapper, animation: 'revealDashboard 1.2s cubic-bezier(0.16, 1, 0.3, 1)'}}>
+    <div style={{...themeStyles.pageWrapper as any, padding: "80px 20px", animation: 'revealDashboard 1.2s cubic-bezier(0.16, 1, 0.3, 1)'}}>
       <button onClick={toggleTheme} style={styles.themeToggle}>
         {isDarkMode ? "🌙 DARK" : "☀️ LIGHT"}
       </button>
@@ -145,7 +170,7 @@ export default function Home() {
           <h1 style={{...themeStyles.title, fontSize: 'clamp(1.8rem, 6vw, 3.2rem)'}}>
             🎬 <span style={styles.aiSparkle}>AI</span> Movie Insights
           </h1>
-          <p style={themeStyles.subtitle}>DISTILLING CINEMA INTO DATA.</p>
+          <p style={themeStyles.subtitle}>Cinematic Insights, Brewed Instantly.</p>
         </header>
 
         <div style={themeStyles.searchBox}>
@@ -177,6 +202,7 @@ export default function Home() {
               <img src={movie.poster} alt={movie.title} style={styles.poster} />
               <div style={styles.ratingBadge}>{movie.rating} ⭐</div>
             </div>
+            
             <div style={styles.details}>
               <h2 style={{...themeStyles.movieTitle, fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', textAlign: isMobile ? 'center' : 'left'}}>
                 {movie.title} <span style={styles.year}>({movie.year})</span>
@@ -193,10 +219,17 @@ export default function Home() {
                 <h4 style={styles.sectionLabel}>Analysis</h4>
                 <p style={themeStyles.sectionText}>{movie.plot}</p>
               </div>
+              
               <div style={{...themeStyles.summaryBox, borderLeft: `4px solid ${getSentimentColor(movie.sentimentLabel).border}`}}>
                 <div style={styles.summaryHeader}>
                   <h3 style={themeStyles.insightTitle}>🧠 Intelligence Report</h3>
-                  <span style={{...styles.badge, backgroundColor: getSentimentColor(movie.sentimentLabel).bg, color: getSentimentColor(movie.sentimentLabel).text, border: `1px solid ${getSentimentColor(movie.sentimentLabel).border}`}}>
+                  {/* --- FIXED THE ERROR AND REFINED THE BADGE STYLE BELOW --- */}
+                  <span style={{
+                    ...styles.badge, 
+                    backgroundColor: getSentimentColor(movie.sentimentLabel).bg, 
+                    color: getSentimentColor(movie.sentimentLabel).text, 
+                    border: `1px solid ${getSentimentColor(movie.sentimentLabel).border}`
+                  }}>
                     {movie.sentimentLabel}
                   </span>
                 </div>
@@ -213,77 +246,107 @@ export default function Home() {
 const styles: any = {
   pageWrapper: {
     minHeight: "100vh",
-    padding: "40px 15px",
+    width: "100%",
     transition: "all 0.6s ease",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+    position: "relative",
+    overflowX: "hidden"
   },
-  bootContainer: { textAlign: 'center', width: '100%', maxWidth: '800px' },
+  themeToggle: { 
+    position: "absolute", 
+    top: "20px", 
+    right: "20px", 
+    padding: "10px 16px", 
+    borderRadius: "6px", 
+    border: "1px solid #818cf8", 
+    background: "transparent", 
+    color: "#818cf8", 
+    fontSize: '0.7rem', 
+    fontWeight: 'bold', 
+    cursor: "pointer", 
+    zIndex: 1000 
+  },
+  bootContainer: { 
+    textAlign: 'center', 
+    width: '100%', 
+    maxWidth: '900px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1
+  },
   glowButton: {
     marginTop: '40px',
-    padding: '15px 30px',
+    padding: '18px 40px',
     background: 'transparent',
     border: '2px solid #818cf8',
     color: '#818cf8',
-    fontSize: '0.9rem',
+    fontSize: '1rem',
     fontWeight: '800',
-    letterSpacing: '0.1em',
+    letterSpacing: '0.2em',
     cursor: 'pointer',
     borderRadius: '4px',
-    boxShadow: '0 0 15px rgba(129, 140, 248, 0.2)',
+    boxShadow: '0 0 20px rgba(129, 140, 248, 0.2)',
+    transition: 'all 0.3s ease'
   },
-  progressBarBg: { width: '80%', maxWidth: '300px', height: '2px', backgroundColor: 'rgba(129, 140, 248, 0.1)', margin: '0 auto', overflow: 'hidden' },
+  // REFINED BADGE STYLE: Standard size and elegant border radius
+  badge: {
+    padding: "4px 12px",
+    borderRadius: "50px", 
+    fontSize: "0.65rem",
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: "0.05em",
+    display: "inline-block"
+  },
+  progressBarBg: { width: '80%', maxWidth: '350px', height: '2px', backgroundColor: 'rgba(129, 140, 248, 0.1)', margin: '0 auto', overflow: 'hidden' },
   progressBarFill: { height: '100%', backgroundColor: '#818cf8', transition: 'width 0.8s ease' },
-  loadingStatus: { marginTop: '20px', fontSize: '0.6rem', letterSpacing: '0.3em', color: '#818cf8' },
-  themeToggle: { position: "absolute+", top: "15px", right: "15px", padding: "8px 12px", borderRadius: "7px", border: "1px solid #818cf8", background: "transparent", color: "#818cf8", fontSize: '0.8rem', fontWeight: 'bold', zIndex: 1000 },
+  loadingStatus: { marginTop: '25px', fontSize: '0.7rem', letterSpacing: '0.4em', color: '#818cf8' },
   container: { width: "100%", maxWidth: "1000px", margin: "0 auto" },
-  header: { textAlign: "center", marginBottom: "30px" },
+  header: { textAlign: "center", marginBottom: "40px" },
   title: { fontWeight: "900", letterSpacing: "-0.04em", marginBottom: "10px" },
   aiSparkle: { background: "linear-gradient(to right, #818cf8, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" },
-  subtitle: { fontSize: "0.7rem", fontWeight: "700", letterSpacing: '0.2em' },
+  subtitle: { fontSize: "0.75rem", fontWeight: "700", letterSpacing: '0.3em' },
   searchBox: { 
     display: "flex", 
     flexWrap: "wrap", 
     justifyContent: "center", 
-    marginBottom: "40px", 
-    gap: "10px", 
-    padding: "12px", 
-    borderRadius: "12px", 
+    marginBottom: "50px", 
+    gap: "12px", 
+    padding: "14px", 
+    borderRadius: "14px", 
     border: "1px solid" 
   },
   input: { 
-    padding: "12px 15px", 
-    flex: "1 1 200px", 
-    maxWidth: "400px",
-    borderRadius: "8px", 
+    padding: "14px 20px", 
+    flex: "1 1 250px", 
+    maxWidth: "450px",
+    borderRadius: "10px", 
     border: "1px solid", 
     fontSize: "1rem", 
     outline: "none" 
   },
-  button: { padding: "12px 20px", borderRadius: "8px", border: "none", background: "#4f46e5", color: "#fff", fontWeight: "900", cursor: "pointer" },
+  button: { padding: "14px 28px", borderRadius: "10px", border: "none", background: "#4f46e5", color: "#fff", fontWeight: "900", cursor: "pointer" },
   card: { 
     display: "flex", 
-    gap: "30px", 
-    padding: "25px", 
-    borderRadius: "20px", 
+    gap: "40px", 
+    padding: "35px", 
+    borderRadius: "24px", 
     border: "1px solid",
+    width: "100%"
   },
   posterWrapper: { position: "relative", width: "100%" },
-  poster: { width: "100%", borderRadius: "12px", objectFit: "cover" },
-  ratingBadge: { position: "absolute", top: "-5px", right: "-5px", backgroundColor: "#000", padding: "5px 10px", borderRadius: "6px", border: "1px solid #eab308", color: "#fff", fontSize: "0.8rem" },
+  poster: { width: "100%", borderRadius: "14px", objectFit: "cover" },
+  ratingBadge: { position: "absolute", top: "-8px", right: "-8px", backgroundColor: "#000", padding: "6px 12px", borderRadius: "8px", border: "1px solid #eab308", color: "#fff", fontSize: "0.9rem", fontWeight: "bold" },
   details: { width: "100%" },
-  movieTitle: { fontWeight: "900", marginBottom: '5px' },
-  metaRow: { display: "flex", flexWrap: "wrap", gap: "15px", marginBottom: "20px", fontSize: "0.85rem", color: '#94a3b8' },
-  section: { marginBottom: "20px" },
-  sectionLabel: { color: "#818cf8", fontSize: "0.65rem", letterSpacing: "0.15em", fontWeight: "bold", marginBottom: "5px", textTransform: "uppercase" },
-  sectionText: { lineHeight: "1.6", fontSize: "0.9rem" },
-  summaryBox: { marginTop: "20px", padding: "15px", borderRadius: "10px" },
-  summaryHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" },
+  movieTitle: { fontWeight: "900", marginBottom: '8px' },
+  metaRow: { display: "flex", flexWrap: "wrap", gap: "20px", marginBottom: "25px", fontSize: "0.9rem", color: '#94a3b8' },
+  sectionLabel: { color: "#818cf8", fontSize: "0.7rem", letterSpacing: "0.2em", fontWeight: "bold", marginBottom: "6px", textTransform: "uppercase" },
+  sectionText: { lineHeight: "1.7", fontSize: "0.95rem" },
+  summaryBox: { marginTop: "30px", padding: "20px", borderRadius: "12px" },
+  summaryHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" },
   insightTitle: { margin: 0, fontSize: "1.1rem", fontWeight: "800" },
-  badge: { padding: "3px 10px", borderRadius: "4px", fontSize: "0.55rem", fontWeight: "900" },
-  summaryText: { fontStyle: "italic", lineHeight: "1.5", margin: 0, fontSize: "0.9rem" },
-  errorCard: { backgroundColor: "rgba(220, 38, 38, 0.1)", color: "#f87171", padding: "15px", borderRadius: "10px", textAlign: "center", margin: "0 auto 20px auto", maxWidth: "90%" },
-  shimmerLine: { width: "100%", height: "1px", background: "linear-gradient(to right, transparent, #818cf8, transparent)", animation: "shimmer 2s infinite" },
-  loadingText: { color: "#818cf8", marginTop: "15px", fontSize: '0.6rem', letterSpacing: '0.2em', fontWeight: 'bold' }
+  errorCard: { backgroundColor: "rgba(220, 38, 38, 0.1)", color: "#f87171", padding: "18px", borderRadius: "12px", textAlign: "center", margin: "0 auto 30px auto", maxWidth: "500px", border: "1px solid rgba(220, 38, 38, 0.3)" },
+  loadingText: { color: "#818cf8", marginTop: "20px", fontSize: '0.7rem', letterSpacing: '0.3em', fontWeight: 'bold' },
+  binaryOverlay: { fontSize: '0.6rem', color: '#1e1b4b', marginTop: '15px', fontFamily: 'monospace' }
 };
